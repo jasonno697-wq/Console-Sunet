@@ -340,24 +340,50 @@ export default function App() {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
+    const statusCounts = softwareList.reduce(
+      (acc, soft) => {
+        acc[soft.status] += 1;
+        return acc;
+      },
+      { online: 0, offline: 0, connecting: 0 },
+    );
+
+    const typeCounts = softwareList.reduce<Record<Software['type'], number>>(
+      (acc, soft) => {
+        acc[soft.type] += 1;
+        return acc;
+      },
+      { System: 0, App: 0, Service: 0, Tab: 0, Process: 0 },
+    );
+
     const softwareRows = softwareList
       .map(
         (soft) => `
           <tr>
             <td>${escapeHtml(soft.name)}</td>
             <td>${escapeHtml(soft.type)}</td>
-            <td>${escapeHtml(soft.status)}</td>
+            <td><span class="pill ${escapeHtml(soft.status)}">${escapeHtml(soft.status)}</span></td>
             <td>${connectedSoftware.includes(soft.id) ? 'Connected' : 'Disconnected'}</td>
-            <td>${soft.downloadUrl ? escapeHtml(soft.downloadUrl) : '—'}</td>
+            <td>${soft.isGame ? 'Yes' : 'No'}</td>
+            <td>${soft.canOverride ? 'Yes' : 'No'}</td>
+            <td>${soft.downloadUrl ? `<a href="${escapeHtml(soft.downloadUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(soft.downloadUrl)}</a>` : '—'}</td>
           </tr>`,
       )
       .join('');
 
+    const commandRows = COMMANDS.map(
+      (command) => `
+        <tr>
+          <td><code>${escapeHtml(command.cmd)}</code></td>
+          <td>${escapeHtml(command.desc)}</td>
+        </tr>`,
+    ).join('');
+
     const logItems = logs
-      .slice(-200)
+      .slice(-300)
       .map(
         (log) => `
-        <li><strong>[${escapeHtml(log.timestamp)}]</strong> <em>${escapeHtml(log.type)}</em> - ${escapeHtml(log.text)}</li>`,
+        <li data-type="${escapeHtml(log.type)}"><strong>[${escapeHtml(log.timestamp)}]</strong> <span class="tag">${escapeHtml(log.type)}</span> ${escapeHtml(log.text)}</li>`,
       )
       .join('');
 
@@ -366,47 +392,117 @@ export default function App() {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sunset Console - Full System Export</title>
+  <title>Sunset Console - Advanced Full System Export</title>
   <style>
-    body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; margin: 2rem; background: #0b1020; color: #e6edf3; }
-    h1, h2 { color: #f59e0b; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #2f3b54; padding: 0.5rem; text-align: left; vertical-align: top; }
-    th { background: #141c2f; }
-    code { background: #141c2f; padding: 0.1rem 0.3rem; border-radius: 4px; }
-    .meta { color: #94a3b8; margin-bottom: 1rem; }
-    ul { padding-left: 1.2rem; }
-    li { margin-bottom: 0.35rem; }
+    :root {
+      color-scheme: dark;
+      --bg: #070b16;
+      --bg-soft: #121a2d;
+      --border: #243353;
+      --text: #e6edf3;
+      --muted: #96a2bd;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: var(--bg); color: var(--text); }
+    .wrap { width: min(1200px, 100% - 2rem); margin: 1.5rem auto 2rem; }
+    .hero { background: linear-gradient(120deg, #111b33 0%, #1d1433 100%); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem; }
+    h1 { margin: 0; font-size: 1.35rem; color: var(--accent); }
+    h2 { margin: 0 0 .8rem; font-size: 1rem; color: #f8b84b; }
+    .meta { margin-top: .5rem; color: var(--muted); font-size: .85rem; }
+    .grid { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .6rem; }
+    .card { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: .75rem; }
+    .k { font-size: .75rem; color: var(--muted); text-transform: uppercase; }
+    .v { margin-top: .35rem; font-size: 1.1rem; font-weight: 700; }
+    section { margin-top: 1rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid var(--border); text-align: left; padding: .5rem; font-size: .83rem; vertical-align: top; }
+    th { background: #18233d; }
+    .pill { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: .1rem .45rem; font-size: .72rem; }
+    .pill.online { border-color: #14532d; color: #6ee7b7; }
+    .pill.offline { border-color: #7f1d1d; color: #fca5a5; }
+    .pill.connecting { border-color: #78350f; color: #fcd34d; }
+    .toolbar { display: flex; gap: .5rem; margin-bottom: .75rem; flex-wrap: wrap; }
+    input, select { background: #0f172a; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .45rem .55rem; }
+    ul { margin: 0; padding-left: 1.2rem; max-height: 380px; overflow: auto; }
+    li { margin-bottom: .4rem; color: #cdd6e3; font-size: .84rem; }
+    .tag { color: var(--accent); font-weight: 700; margin-right: .25rem; }
+    code { color: #fcd34d; }
+    .footer { color: var(--muted); font-size: .75rem; margin-top: .8rem; }
+    a { color: #93c5fd; }
   </style>
 </head>
 <body>
-  <h1>Sunset Console - Full System Export</h1>
-  <p class="meta">Generated: <code>${generatedAt}</code></p>
+  <main class="wrap">
+    <header class="hero">
+      <h1>Sunset Console • Advanced Full System Export</h1>
+      <div class="meta">Generated <code>${generatedAt}</code> • Offline artifact with diagnostics snapshot.</div>
+      <div class="grid">
+        <div class="card"><div class="k">Bypass active</div><div class="v">${isBypassActive ? 'YES' : 'NO'}</div></div>
+        <div class="card"><div class="k">System halted</div><div class="v">${isSystemHalted ? 'YES' : 'NO'}</div></div>
+        <div class="card"><div class="k">Connected software</div><div class="v">${connectedSoftware.length}</div></div>
+        <div class="card"><div class="k">Known software</div><div class="v">${softwareList.length}</div></div>
+        <div class="card"><div class="k">Online / Offline / Connecting</div><div class="v">${statusCounts.online}/${statusCounts.offline}/${statusCounts.connecting}</div></div>
+        <div class="card"><div class="k">System/App/Service/Tab/Process</div><div class="v">${typeCounts.System}/${typeCounts.App}/${typeCounts.Service}/${typeCounts.Tab}/${typeCounts.Process}</div></div>
+      </div>
+    </header>
 
-  <h2>System State</h2>
-  <ul>
-    <li>Bypass Active: <strong>${isBypassActive ? 'Yes' : 'No'}</strong></li>
-    <li>System Halted: <strong>${isSystemHalted ? 'Yes' : 'No'}</strong></li>
-    <li>Connected Software Count: <strong>${connectedSoftware.length}</strong></li>
-    <li>Total Known Software: <strong>${softwareList.length}</strong></li>
-  </ul>
+    <section>
+      <h2>Software Inventory</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Type</th><th>Status</th><th>Connection</th><th>Game</th><th>Override</th><th>Download URL</th>
+          </tr>
+        </thead>
+        <tbody>${softwareRows || '<tr><td colspan="7">No software found.</td></tr>'}</tbody>
+      </table>
+    </section>
 
-  <h2>Software Inventory</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Connection</th>
-        <th>Download URL</th>
-      </tr>
-    </thead>
-    <tbody>${softwareRows || '<tr><td colspan="5">No software found.</td></tr>'}</tbody>
-  </table>
+    <section>
+      <h2>Command Reference</h2>
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>${commandRows}</tbody>
+      </table>
+    </section>
 
-  <h2>Recent Logs (last ${Math.min(logs.length, 200)})</h2>
-  <ul>${logItems || '<li>No logs captured.</li>'}</ul>
+    <section>
+      <h2>Recent Logs (last ${Math.min(logs.length, 300)})</h2>
+      <div class="toolbar">
+        <input id="log-search" type="text" placeholder="Filter log text..." />
+        <select id="log-type">
+          <option value="all">All types</option>
+          <option value="info">info</option>
+          <option value="error">error</option>
+          <option value="success">success</option>
+          <option value="command">command</option>
+          <option value="system">system</option>
+        </select>
+      </div>
+      <ul id="logs">${logItems || '<li>No logs captured.</li>'}</ul>
+      <div class="footer">Local report script only filters visible log entries. It does not fetch network resources.</div>
+    </section>
+  </main>
+
+  <script>
+    const search = document.getElementById('log-search');
+    const type = document.getElementById('log-type');
+    const logs = Array.from(document.querySelectorAll('#logs li'));
+    const apply = () => {
+      const q = (search.value || '').toLowerCase();
+      const t = type.value;
+      logs.forEach((item) => {
+        const okType = t === 'all' || item.dataset.type === t;
+        const okText = item.textContent.toLowerCase().includes(q);
+        item.style.display = okType && okText ? '' : 'none';
+      });
+    };
+    search?.addEventListener('input', apply);
+    type?.addEventListener('change', apply);
+  </script>
 </body>
 </html>`;
 
@@ -414,12 +510,12 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'SUNSET_FULL_SYSTEM_EXPORT.html';
+    a.download = 'SUNSET_ADVANCED_FULL_SYSTEM_EXPORT.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    addLog('success', 'SUNSET_FULL_SYSTEM_EXPORT.html generated and download started.');
+    addLog('success', 'SUNSET_ADVANCED_FULL_SYSTEM_EXPORT.html generated and download started.');
   };
 
   return (
