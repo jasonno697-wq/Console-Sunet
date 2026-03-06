@@ -60,6 +60,7 @@ const COMMANDS: CommandDef[] = [
   { cmd: '!settings', desc: 'Access connected software settings', icon: <Settings className="w-4 h-4" /> },
   { cmd: '!connect', desc: 'Shows menu to connect to programs', icon: <LinkIcon className="w-4 h-4" /> },
   { cmd: '!bypass', desc: 'Bypasses system restrictions for apps', icon: <Cpu className="w-4 h-4" /> },
+  { cmd: '!bypassai', desc: 'Uses AI to analyze source and find patches', icon: <Activity className="w-4 h-4" /> },
 ];
 
 export default function App() {
@@ -71,6 +72,8 @@ export default function App() {
   const [isSystemHalted, setIsSystemHalted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCommands, setShowCommands] = useState(false);
+  const [showBypassConfirm, setShowBypassConfirm] = useState(false);
+  const [pendingBypassId, setPendingBypassId] = useState<string | null>(null);
   const [isBypassActive, setIsBypassActive] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -181,6 +184,32 @@ export default function App() {
           setIsBypassActive(prev => !prev);
           addLog('success', `Bypass Mode ${!isBypassActive ? 'ENABLED' : 'DISABLED'}. System restrictions lifted. Forced download protocols active.`);
         }, 1500);
+      },
+      '!bypassai': () => {
+        addLog('info', 'Initializing Neural Analysis Engine...');
+        addLog('system', 'Scanning application source code for vulnerabilities...');
+        
+        setTimeout(() => {
+          addLog('system', 'Deep-linking into kernel memory clusters...');
+          addLog('info', 'AI analyzing data patterns in /src/App.tsx...');
+          
+          setTimeout(() => {
+            addLog('success', 'AI Analysis Complete: Optimized patch identified.');
+            addLog('system', 'Patch ID: AI-OPT-992X-B');
+            addLog('info', 'Activating AI-assisted bypass...');
+            setIsBypassActive(true);
+            
+            // Trigger a special AI download
+            const link = document.createElement('a');
+            link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(`AI-OPTIMIZED SYSTEM PATCH\nSource: Neural Analysis Engine\nTarget: Kernel Override\nStatus: VERIFIED\nTimestamp: ${new Date().toISOString()}`);
+            link.download = `AI_OPTIMIZED_PATCH.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            addLog('success', 'AI-Optimized Patch downloaded. System restrictions permanently bypassed for this session.');
+          }, 2000);
+        }, 1500);
       }
     };
 
@@ -205,6 +234,21 @@ export default function App() {
     }
 
     if (isBypassActive && soft.status === 'offline' && !isCurrentlyConnected) {
+      setPendingBypassId(id);
+      setShowBypassConfirm(true);
+      return;
+    }
+
+    executeConnection(id);
+  };
+
+  const executeConnection = (id: string, isForced: boolean = false) => {
+    const soft = softwareList.find(s => s.id === id);
+    if (!soft) return;
+
+    const isCurrentlyConnected = connectedSoftware.includes(id);
+
+    if (isForced) {
       addLog('system', `FORCING DOWNLOAD: System Patch for ${soft.name}...`);
       const link = document.createElement('a');
       link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(`System Patch for ${soft.name}\nBypass Protocol Active\nTimestamp: ${new Date().toISOString()}`);
@@ -218,9 +262,7 @@ export default function App() {
       isCurrentlyConnected ? prev.filter(i => i !== id) : [...prev, id]
     );
     
-    if (soft) {
-      addLog('success', `${isCurrentlyConnected ? 'Disconnected from' : 'Connected to'} ${soft.name}${isBypassActive && soft.status === 'offline' ? ' (BYPASS ACTIVE - FORCED DOWNLOAD)' : ''}`);
-    }
+    addLog('success', `${isCurrentlyConnected ? 'Disconnected from' : 'Connected to'} ${soft.name}${isForced ? ' (BYPASS ACTIVE - FORCED DOWNLOAD)' : ''}`);
   };
 
   const downloadHTML = () => {
@@ -276,7 +318,8 @@ export default function App() {
                 { cmd: '!stoptask', desc: 'Stops the app from working' },
                 { cmd: '!settings', desc: 'Access connected software settings' },
                 { cmd: '!connect', desc: 'Shows menu to connect to programs' },
-                { cmd: '!bypass', desc: 'Bypasses system restrictions for apps' }
+                { cmd: '!bypass', desc: 'Bypasses system restrictions for apps' },
+                { cmd: '!bypassai', desc: 'Uses AI to analyze source and find patches' }
             ];
 
             const handleCmd = (e) => {
@@ -383,6 +426,13 @@ export default function App() {
           </div>
           
             <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsMenuOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-sm text-white ${isBypassActive ? 'border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)] animate-pulse' : ''}`}
+            >
+              <Menu className="w-4 h-4" />
+              <span className="hidden sm:inline">Software Hub</span>
+            </button>
             {isBypassActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -494,9 +544,24 @@ export default function App() {
                   <Menu className="text-orange-400 w-5 h-5" />
                   <h2 className="text-white font-bold uppercase tracking-widest text-sm">Software Hub</h2>
                 </div>
-                <button onClick={() => setIsMenuOpen(false)} className="md:hidden text-white/40 hover:text-white">
-                  <XCircle className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      addLog('system', 'MANUAL OVERRIDE INITIATED...');
+                      setTimeout(() => {
+                        setIsBypassActive(prev => !prev);
+                        addLog('success', `Security Override ${!isBypassActive ? 'ACTIVATED' : 'DEACTIVATED'}`);
+                      }, 800);
+                    }}
+                    className={`p-2 rounded-lg border transition-all ${isBypassActive ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                    title="Security Override"
+                  >
+                    <Cpu className={`w-4 h-4 ${isBypassActive ? 'animate-pulse' : ''}`} />
+                  </button>
+                  <button onClick={() => setIsMenuOpen(false)} className="md:hidden text-white/40 hover:text-white">
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -676,6 +741,61 @@ export default function App() {
                 </div>
                 <div className="p-6 bg-white/5 border-t border-white/5 text-center">
                   <p className="text-xs text-white/40 italic">Tip: You can type these directly into the terminal console.</p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* --- Bypass Confirmation Modal --- */}
+        <AnimatePresence>
+          {showBypassConfirm && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="w-full max-w-md bg-[#1a1a2e] border border-orange-500/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(249,115,22,0.2)]"
+              >
+                <div className="p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto border border-orange-500/30">
+                    <AlertTriangle className="text-orange-500 w-10 h-10 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Security Override</h2>
+                    <p className="text-white/60 text-sm leading-relaxed">
+                      You are attempting to force a connection to a restricted node. This will bypass kernel security and initiate a forced download of a system patch.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <button 
+                      onClick={() => {
+                        if (pendingBypassId) {
+                          executeConnection(pendingBypassId, true);
+                        }
+                        setShowBypassConfirm(false);
+                        setPendingBypassId(null);
+                      }}
+                      className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20"
+                    >
+                      Force connection and download patch
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowBypassConfirm(false);
+                        setPendingBypassId(null);
+                        addLog('info', 'Bypass connection cancelled by user.');
+                      }}
+                      className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 font-bold rounded-2xl transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
