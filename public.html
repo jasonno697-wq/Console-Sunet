@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunset Console - Public Access</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+        body { font-family: 'JetBrains Mono', monospace; background-color: #1a1a2e; color: white; margin: 0; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+        const { motion, AnimatePresence } = FramerMotion;
+
+        const Icon = ({ name, className = "w-4 h-4" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const DEFAULT_SOFTWARE = [
+            { id: '1', name: 'Core Engine', status: 'online', type: 'System' },
+            { id: '2', name: 'Wave Processor', status: 'online', type: 'Service' },
+            { id: '3', name: 'Sunset Renderer', status: 'online', type: 'App' },
+            { id: '4', name: 'Cloud Sync', status: 'offline', type: 'Service' },
+            { id: '5', name: 'Drive Access', status: 'offline', type: 'System' },
+        ];
+
+        const COMMANDS = [
+            { cmd: '!reload', desc: 'Reloads the application', icon: 'refresh-cw' },
+            { cmd: '!fix', desc: 'Restarts app and pulls up bug error', icon: 'activity' },
+            { cmd: '!locate', desc: 'Locates app origin using drive', icon: 'map-pin' },
+            { cmd: '!ping', desc: 'Pings the app to see if its working', icon: 'wifi' },
+            { cmd: '!find', desc: 'Finds the app in system clusters', icon: 'search' },
+            { cmd: '!stoptask', desc: 'Stops the app from working', icon: 'x-circle' },
+            { cmd: '!settings', desc: 'Access connected software settings', icon: 'settings' },
+            { cmd: '!connect', desc: 'Shows menu to connect to programs', icon: 'link' },
+            { cmd: '!bypass', desc: 'Bypasses system restrictions for apps', icon: 'cpu' },
+            { cmd: '!bypassai', desc: 'Uses AI to analyze source and find patches', icon: 'zap' },
+        ];
+
+        function App() {
+            const [logs, setLogs] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [softwareList, setSoftwareList] = useState(DEFAULT_SOFTWARE);
+            const [connectedSoftware, setConnectedSoftware] = useState([]);
+            const [isSystemHalted, setIsSystemHalted] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [showCommands, setShowCommands] = useState(false);
+            const [showBypassConfirm, setShowBypassConfirm] = useState(false);
+            const [pendingBypassId, setPendingBypassId] = useState(null);
+            const [isBypassActive, setIsBypassActive] = useState(false);
+            const [isScanning, setIsScanning] = useState(false);
+            const scrollRef = useRef(null);
+
+            useEffect(() => {
+                addLog('system', 'Sunset Console v1.0.0 Initialized...');
+                addLog('info', 'Type !connect to see available software.');
+            }, []);
+
+            useEffect(() => {
+                if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, [logs]);
+
+            const addLog = (type, text) => {
+                const timestamp = new Date().toLocaleTimeString();
+                setLogs(prev => [...prev, { type, text, timestamp }]);
+            };
+
+            const handleCommand = (cmd) => {
+                const cleanCmd = cmd.trim().toLowerCase();
+                addLog('command', "> " + cmd);
+                if (isSystemHalted && cleanCmd !== '!fix') {
+                    addLog('error', 'SYSTEM HALTED. Use !fix to restart.');
+                    return;
+                }
+                const handlers = {
+                    '!reload': () => { addLog('info', 'Reloading...'); setTimeout(() => window.location.reload(), 1000); },
+                    '!fix': () => { addLog('system', 'Restarting...'); setTimeout(() => { setIsSystemHalted(false); addLog('success', 'Restored.'); }, 2000); },
+                    '!locate': () => { addLog('info', 'Scanning...'); setTimeout(() => addLog('success', 'Location confirmed.'), 1000); },
+                    '!ping': () => addLog('success', "Pong! " + (Math.floor(Math.random() * 50) + 10) + "ms"),
+                    '!find': () => addLog('info', 'Searching...'),
+                    '!stoptask': () => { addLog('error', 'Stopping...'); setIsSystemHalted(true); },
+                    '!settings': () => setShowSettings(true),
+                    '!connect': () => {
+                        setIsMenuOpen(true); setIsScanning(true); addLog('info', 'Scanning...');
+                        setTimeout(() => {
+                            const detected = [
+                                { id: 'tab-1', name: 'Google Search: "How to hack"', status: 'online', type: 'Tab' },
+                                { id: 'app-1', name: 'Discord.exe', status: 'online', type: 'App' },
+                                { id: 'proc-2', name: 'Restricted Kernel Node', status: 'offline', type: 'Process' },
+                            ];
+                            setSoftwareList(prev => {
+                                const ids = new Set(prev.map(s => s.id));
+                                return [...prev, ...detected.filter(d => !ids.has(d.id))];
+                            });
+                            setIsScanning(false); addLog('success', 'Scan complete.');
+                        }, 2000);
+                    },
+                    '!bypass': () => { setIsBypassActive(!isBypassActive); addLog('success', 'Bypass toggled.'); },
+                    '!bypassai': () => { addLog('info', 'AI Analysis...'); setTimeout(() => { setIsBypassActive(true); addLog('success', 'AI Patch Applied.'); }, 2000); }
+                };
+                if (handlers[cleanCmd]) handlers[cleanCmd]();
+                else addLog('error', 'Unknown command.');
+                setInputValue('');
+            };
+
+            const toggleConnection = (id) => {
+                const soft = softwareList.find(s => s.id === id);
+                if (!soft) return;
+                const isConnected = connectedSoftware.includes(id);
+                if (soft.status === 'offline' && !isBypassActive && !isConnected) {
+                    addLog('error', 'OFFLINE. Use !bypass.'); return;
+                }
+                if (isBypassActive && soft.status === 'offline' && !isConnected) {
+                    setPendingBypassId(id); setShowBypassConfirm(true); return;
+                }
+                executeConnection(id);
+            };
+
+            const executeConnection = (id, isForced = false) => {
+                const soft = softwareList.find(s => s.id === id);
+                const isConnected = connectedSoftware.includes(id);
+                setConnectedSoftware(prev => isConnected ? prev.filter(i => i !== id) : [...prev, id]);
+                addLog('success', (isConnected ? 'Disconnected' : 'Connected') + " to " + soft.name);
+            };
+
+            return (
+                <div className="relative h-screen w-full bg-[#1a1a2e] overflow-hidden font-mono selection:bg-orange-500/30">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#ff7e5f] via-[#feb47b] to-[#1a1a2e] opacity-80" />
+                    <div className="relative z-10 h-full flex flex-col p-4 md:p-8 gap-6">
+                        <header className="flex items-center justify-between bg-black/20 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20">
+                                    <Icon name="terminal" className="text-white w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-white tracking-tight">Sunset Console</h1>
+                                    <p className="text-[10px] text-white/60 uppercase tracking-widest">System Operational • v1.0.0</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setIsMenuOpen(true)} className={"flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-sm text-white " + (isBypassActive ? 'border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)] animate-pulse' : '')}>
+                                    <Icon name="menu" className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Software Hub</span>
+                                </button>
+                                {isBypassActive && (
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/20 border border-orange-500/30 rounded-full">
+                                        <Icon name="cpu" className="w-3 h-3 text-orange-400 animate-pulse" />
+                                        <span className="text-[10px] text-orange-400 font-bold uppercase tracking-tighter">Bypass Active</span>
+                                    </div>
+                                )}
+                                <button onClick={() => setShowCommands(true)} className={"flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-xl transition-all text-sm text-orange-400 font-bold " + (isBypassActive ? 'animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.5)]' : '')}>
+                                    <Icon name="terminal" className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Commands</span>
+                                </button>
+                            </div>
+                        </header>
+
+                        <main className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+                            <section className="flex-1 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
+                                    <span className="text-xs text-white/40 uppercase tracking-widest">Terminal Output</span>
+                                    <Icon name="activity" className="w-4 h-4 text-white/20" />
+                                </div>
+                                <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+                                    {logs.map((log, i) => (
+                                        <div key={i} className="flex gap-4 text-sm">
+                                            <span className="text-white/30 shrink-0">[{log.timestamp}]</span>
+                                            <span className={log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-emerald-400' : log.type === 'command' ? 'text-orange-400 font-bold' : 'text-white/80'}>{log.text}</span>
+                                        </div>
+                                    ))}
+                                    {isSystemHalted && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 font-bold">SYSTEM HALTED</div>}
+                                </div>
+                                <div className="p-4 bg-black/20 border-t border-white/5">
+                                    <div className="relative flex items-center">
+                                        <span className="absolute left-4 text-orange-400 font-bold">$</span>
+                                        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCommand(inputValue)} disabled={isSystemHalted} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-white outline-none focus:border-orange-500/50" placeholder="Type command..." />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <aside className={"fixed md:relative inset-0 md:inset-auto z-50 md:z-0 w-full md:w-80 flex flex-col gap-6 transition-transform duration-500 " + (isMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0')}>
+                                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setIsMenuOpen(false)} />
+                                <div className="relative z-10 h-full flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="menu" className="text-orange-400 w-5 h-5" />
+                                            <h2 className="text-white font-bold uppercase tracking-widest text-sm">Software Hub</h2>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setIsBypassActive(!isBypassActive)} className={"p-2 rounded-lg border transition-all " + (isBypassActive ? 'bg-orange-500 border-orange-400 text-white' : 'bg-white/5 border-white/10 text-white/40')}>
+                                                <Icon name="cpu" className={isBypassActive ? 'animate-pulse' : ''} />
+                                            </button>
+                                            <button onClick={() => setIsMenuOpen(false)} className="md:hidden text-white/40"><Icon name="x-circle" /></button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                        {isScanning && <div className="text-center py-8 text-orange-400 animate-pulse">Scanning...</div>}
+                                        {!isScanning && softwareList.map(soft => (
+                                            <div key={soft.id} onClick={() => toggleConnection(soft.id)} className={"p-4 rounded-2xl border cursor-pointer transition-all " + (connectedSoftware.includes(soft.id) ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/5 border-white/5')}>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-[10px] opacity-40 uppercase font-bold">{soft.type}</span>
+                                                    <div className={"w-2 h-2 rounded-full " + (soft.status === 'online' ? 'bg-emerald-500' : (isBypassActive ? 'bg-orange-500' : 'bg-red-500'))} />
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <h3 className="text-white font-medium">{soft.name}</h3>
+                                                    <Icon name="link" className={connectedSoftware.includes(soft.id) ? 'text-orange-400' : 'opacity-20'} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </aside>
+                        </main>
+                    </div>
+
+                    <AnimatePresence>
+                        {showBypassConfirm && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+                                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="w-full max-w-md bg-[#1a1a2e] border border-orange-500/30 rounded-3xl p-8 text-center space-y-6">
+                                    <Icon name="alert-triangle" className="w-16 h-16 text-orange-500 mx-auto animate-pulse" />
+                                    <h2 className="text-2xl font-bold">Security Override</h2>
+                                    <p className="text-sm opacity-60">Force connection to restricted node?</p>
+                                    <div className="flex flex-col gap-3">
+                                        <button onClick={() => { executeConnection(pendingBypassId, true); setShowBypassConfirm(false); }} className="w-full py-4 bg-orange-500 rounded-2xl font-bold">Force Connection</button>
+                                        <button onClick={() => setShowBypassConfirm(false)} className="w-full py-4 bg-white/5 rounded-2xl opacity-60">Cancel</button>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    
+                    <AnimatePresence>
+                        {showCommands && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="w-full max-w-2xl bg-[#1a1a2e] border border-white/10 rounded-3xl p-8">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-xl font-bold">Command Registry</h2>
+                                        <button onClick={() => setShowCommands(false)}><Icon name="x-circle" className="w-6 h-6" /></button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {COMMANDS.map(c => (
+                                            <div key={c.cmd} className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                                                <span className="text-orange-400 font-bold">{c.cmd}</span>
+                                                <p className="text-xs opacity-60">{c.desc}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
