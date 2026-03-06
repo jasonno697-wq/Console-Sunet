@@ -35,6 +35,7 @@ interface Software {
   type: 'System' | 'App' | 'Service' | 'Tab' | 'Process';
   isGame?: boolean;
   canOverride?: boolean;
+  downloadUrl?: string;
 }
 
 interface CommandDef {
@@ -50,7 +51,7 @@ const DEFAULT_SOFTWARE: Software[] = [
   { id: '3', name: 'Sunset Renderer', status: 'online', type: 'App' },
   { id: '4', name: 'Cloud Sync', status: 'online', type: 'Service' },
   { id: '5', name: 'Drive Access', status: 'online', type: 'System' },
-  { id: 'sys-override', name: 'Restricted Game Engine', status: 'online', type: 'System', isGame: true, canOverride: true },
+  { id: 'sys-override', name: 'Restricted Game Engine', status: 'online', type: 'System', isGame: true, canOverride: true, downloadUrl: 'https://github.com/topics/game-engine' },
 ];
 
 const COMMANDS: CommandDef[] = [
@@ -169,10 +170,10 @@ export default function App() {
           const detectedItems: Software[] = [
             { id: 'tab-1', name: 'Google Search: "How to hack"', status: 'online', type: 'Tab' },
             { id: 'tab-2', name: 'YouTube: "Sunset Waves 24/7"', status: 'online', type: 'Tab' },
-            { id: 'app-1', name: 'Discord.exe', status: 'online', type: 'App' },
-            { id: 'app-2', name: 'Spotify.exe', status: 'online', type: 'App' },
+            { id: 'app-1', name: 'Discord.exe', status: 'online', type: 'App', downloadUrl: 'https://discord.com/download' },
+            { id: 'app-2', name: 'Spotify.exe', status: 'online', type: 'App', downloadUrl: 'https://www.spotify.com/download' },
             { id: 'proc-1', name: 'System Idle Process', status: 'online', type: 'Process' },
-            { id: 'proc-2', name: 'Restricted Kernel Node', status: 'online', type: 'Process' },
+            { id: 'proc-2', name: 'Restricted Kernel Node', status: 'online', type: 'Process', canOverride: true, downloadUrl: 'https://kernel.org' },
           ];
           
           setSoftwareList(prev => {
@@ -247,9 +248,10 @@ export default function App() {
     
     // If bypass is active, trigger override/enhancement logic instead of normal connection
     if (isBypassActive && !isCurrentlyConnected) {
-      if (soft.canOverride) {
-        setSelectedSoftwareForDownload(soft);
-        setShowDownloadModal(true);
+      if (soft.downloadUrl) {
+        addLog('system', `EXTRACTING EXTERNAL LINK FOR ${soft.name}...`);
+        addLog('info', `Redirecting to external node: ${soft.downloadUrl}`);
+        window.open(soft.downloadUrl, '_blank');
         return;
       }
       setPendingBypassId(id);
@@ -371,7 +373,7 @@ export default function App() {
             { id: '3', name: 'Sunset Renderer', status: 'online', type: 'App' },
             { id: '4', name: 'Cloud Sync', status: 'online', type: 'Service' },
             { id: '5', name: 'Drive Access', status: 'online', type: 'System' },
-            { id: 'sys-override', name: 'Restricted Game Engine', status: 'online', type: 'System', isGame: true, canOverride: true },
+            { id: 'sys-override', name: 'Restricted Game Engine', status: 'online', type: 'System', isGame: true, canOverride: true, downloadUrl: 'https://github.com/topics/game-engine' },
         ];
 
         const COMMANDS = [
@@ -471,8 +473,8 @@ export default function App() {
                         setTimeout(() => {
                             const detected = [
                                 { id: 'tab-1', name: 'Google Search: "Advanced Kernel Exploits"', status: 'online', type: 'Tab' },
-                                { id: 'app-1', name: 'Discord.exe (Vulnerable)', status: 'online', type: 'App' },
-                                { id: 'proc-2', name: 'Restricted Kernel Node [ROOT]', status: 'online', type: 'Process' },
+                                { id: 'app-1', name: 'Discord.exe (Vulnerable)', status: 'online', type: 'App', downloadUrl: 'https://discord.com/download' },
+                                { id: 'proc-2', name: 'Restricted Kernel Node [ROOT]', status: 'online', type: 'Process', canOverride: true, downloadUrl: 'https://kernel.org' },
                             ];
                             setSoftwareList(prev => {
                                 const ids = new Set(prev.map(s => s.id));
@@ -486,20 +488,36 @@ export default function App() {
                         addLog('system', '0x7FFD4A2B: MOV EAX, 1; INT 0x80; // FORCING ROOT ACCESS');
                         setTimeout(() => {
                             setIsBypassActive(!isBypassActive);
-                            addLog('success', 'DEADLY ENHANCEMENT MODE ' + (!isBypassActive ? 'ACTIVE' : 'OFFLINE'));
-                            if (!isBypassActive) addLog('error', 'WARNING: Kernel integrity compromised. System security dismantled.');
+                            addLog('success', 'DEADLY ENHANCEMENT MODE ' + (!isBypassActive ? 'ACTIVE' : 'OFFLINE') + '. System nodes optimized for maximum lethality.');
+                            if (!isBypassActive) addLog('error', 'WARNING: Kernel integrity compromised. System restrictions permanently bypassed.');
                         }, 1500);
                     },
                     '!bypassai': () => { 
                         addLog('info', 'AI NEURAL NETWORK ANALYZING VULNERABILITIES...'); 
                         addLog('info', 'Pattern matching: [Buffer Overflow, SQLi, RCE, Zero-Day]');
-                        addLog('system', 'EXPLOIT IDENTIFIED: 0xDEADBEEF-CVE-2026');
-                        setTimeout(() => { 
-                            setIsBypassActive(true); 
-                            addLog('success', 'AI-DRIVEN KERNEL EXPLOIT INJECTED. ALL NODES EXPOSED.'); 
-                        }, 2500); 
+                        setTimeout(() => {
+                            addLog('system', 'Deep-linking into kernel memory clusters...');
+                            addLog('system', 'EXPLOIT IDENTIFIED: 0xDEADBEEF-CVE-2026');
+                            setTimeout(() => {
+                                addLog('success', 'AI Analysis Complete: Deadly exploit identified.');
+                                addLog('info', 'Activating AI-assisted kernel override...');
+                                setIsBypassActive(true);
+                                const link = document.createElement('a');
+                                link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent("AI-DEADLY SYSTEM EXPLOIT\\nSource: Neural Analysis Engine\\nTarget: Kernel Root Override\\nStatus: VERIFIED");
+                                link.download = "AI_DEADLY_EXPLOIT.txt";
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                addLog('success', 'AI-Deadly Exploit downloaded. System security completely dismantled.');
+                            }, 2000);
+                        }, 1500);
                     },
-                    '!clear': () => { addLog('system', 'Wiping forensic traces...'); setClearedLogs(prev => [...prev, ...logs]); setLogs([]); setTimeout(() => addLog('success', 'Logs purged. No evidence remains.'), 1000); }
+                    '!clear': () => { 
+                        addLog('system', 'Purging console history from past 12 hours...'); 
+                        setClearedLogs(prev => [...prev, ...logs]); 
+                        setLogs([]); 
+                        setTimeout(() => addLog('success', 'History purged. Use "Restore Forensics" in Software Hub to restore.'), 1000); 
+                    }
                 };
                 if (handlers[cleanCmd]) handlers[cleanCmd]();
                 else addLog('error', 'Unknown command. Access denied.');
@@ -512,7 +530,12 @@ export default function App() {
                 const isConnected = connectedSoftware.includes(id);
                 
                 if (isBypassActive && !isConnected) {
-                    if (soft.canOverride) { setSelectedSoftwareForDownload(soft); setShowDownloadModal(true); return; }
+                    if (soft.downloadUrl) {
+                        addLog('system', "EXTRACTING EXTERNAL LINK FOR " + soft.name);
+                        addLog('info', "Redirecting to external node: " + soft.downloadUrl);
+                        window.open(soft.downloadUrl, '_blank');
+                        return;
+                    }
                     setPendingBypassId(id); setShowBypassConfirm(true); return;
                 }
                 executeConnection(id);
@@ -610,14 +633,19 @@ export default function App() {
                                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                                         {isScanning && <div className="text-center py-8 text-red-500 animate-pulse">Scanning for vulnerabilities...</div>}
                                         {!isScanning && softwareList.map(soft => (
-                                            <div key={soft.id} onClick={() => toggleConnection(soft.id)} className={"p-4 rounded-2xl border cursor-pointer transition-all " + (connectedSoftware.includes(soft.id) ? 'bg-red-500/10 border-red-500/30' : 'bg-white/5 border-white/5')}>
+                                            <div key={soft.id} onClick={() => toggleConnection(soft.id)} className={"p-4 rounded-2xl border cursor-pointer transition-all " + (connectedSoftware.includes(soft.id) ? 'bg-red-500/10 border-red-500/30' : 'bg-white/5 border-white/5') + (isBypassActive && soft.downloadUrl ? ' border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : '')}>
                                                 <div className="flex justify-between items-center mb-2">
                                                     <span className="text-[10px] text-red-500/60 uppercase font-bold">{soft.type}</span>
-                                                    <div className={"w-2 h-2 rounded-full " + (soft.status === 'online' ? 'bg-emerald-500' : 'bg-red-500')} />
+                                                    <div className="flex items-center gap-2">
+                                                        {isBypassActive && soft.downloadUrl && <span className="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">EXTERNAL NODE</span>}
+                                                        <div className={"w-2 h-2 rounded-full " + (soft.status === 'online' ? 'bg-emerald-500' : 'bg-red-500')} />
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <h3 className="text-white font-medium">{soft.name}</h3>
-                                                    <Icon name="zap" className={connectedSoftware.includes(soft.id) ? 'text-red-500' : 'opacity-20'} />
+                                                    <div className={isBypassActive && soft.downloadUrl ? 'text-red-500' : ''}>
+                                                        <Icon name={isBypassActive && soft.downloadUrl ? 'download' : 'zap'} className={connectedSoftware.includes(soft.id) ? 'text-red-500' : 'opacity-20'} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -697,6 +725,56 @@ export default function App() {
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    <AnimatePresence>
+                        {showSettings && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-lg bg-[#0a0a0f] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="settings" className="text-orange-400 w-6 h-6" />
+                                            <h2 className="text-xl font-bold text-white">System Settings</h2>
+                                        </div>
+                                        <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white"><Icon name="x-circle" className="w-6 h-6" /></button>
+                                    </div>
+                                    <div className="p-8 space-y-6">
+                                        <div className="space-y-4">
+                                            <label className="block">
+                                                <span className="text-xs text-white/40 uppercase font-bold mb-2 block">Connection Protocol</span>
+                                                <select className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-orange-500">
+                                                    <option>WebSocket (Secure)</option>
+                                                    <option>HTTP/2 Stream</option>
+                                                    <option>UDP Broadcast</option>
+                                                </select>
+                                            </label>
+                                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                                                <div>
+                                                    <h4 className="text-white font-medium">Auto-Reconnect</h4>
+                                                    <p className="text-xs text-white/40">Attempt recovery on signal loss</p>
+                                                </div>
+                                                <div className="w-12 h-6 bg-orange-500 rounded-full relative">
+                                                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => { setShowSettings(false); addLog('success', 'Settings updated successfully.'); }} className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20">Save Changes</button>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 pointer-events-none">
+                        <div className="flex items-center gap-8">
+                            <div className="w-4 h-4 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                            </div>
+                            <div className="h-[1px] w-32 bg-gradient-to-r from-orange-500/0 via-orange-500/50 to-orange-500/0" />
+                            <div className="w-4 h-4 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -907,6 +985,7 @@ export default function App() {
                         ? 'bg-orange-500/10 border-orange-500/30' 
                         : 'bg-white/5 border-white/5 hover:bg-white/10'}
                       ${isBypassActive && soft.status === 'offline' ? 'border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]' : ''}
+                      ${isBypassActive && soft.downloadUrl ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : ''}
                     `}
                     onClick={() => toggleConnection(soft.id)}
                   >
@@ -915,6 +994,9 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         {soft.status === 'offline' && isBypassActive && (
                           <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">BYPASSED</span>
+                        )}
+                        {isBypassActive && soft.downloadUrl && (
+                          <span className="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">EXTERNAL NODE</span>
                         )}
                         <div className={`w-2 h-2 rounded-full ${soft.status === 'online' ? 'bg-emerald-500' : (isBypassActive ? 'bg-orange-500' : 'bg-red-500')}`} />
                       </div>
@@ -925,8 +1007,9 @@ export default function App() {
                         p-2 rounded-lg transition-colors
                         ${connectedSoftware.includes(soft.id) ? 'bg-orange-500 text-white' : 'bg-white/5 text-white/40 group-hover:text-white'}
                         ${isBypassActive && soft.status === 'offline' ? 'bg-orange-500/20 text-orange-400' : ''}
+                        ${isBypassActive && soft.downloadUrl ? 'bg-red-600 text-white' : ''}
                       `}>
-                        <LinkIcon className="w-4 h-4" />
+                        {isBypassActive && soft.downloadUrl ? <Download className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
                       </div>
                     </div>
                   </div>
